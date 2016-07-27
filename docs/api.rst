@@ -25,9 +25,30 @@ They all return an instance of the :class:`Response <Response>` object.
 .. autofunction:: patch
 .. autofunction:: delete
 
+Exceptions
+----------
+
+.. autoexception:: requests.RequestException
+.. autoexception:: requests.ConnectionError
+.. autoexception:: requests.HTTPError
+.. autoexception:: requests.URLRequired
+.. autoexception:: requests.TooManyRedirects
+.. autoexception:: requests.ConnectTimeout
+.. autoexception:: requests.ReadTimeout
+.. autoexception:: requests.Timeout
+
+
+Request Sessions
+----------------
+
+.. _sessionapi:
+
+.. autoclass:: Session
+   :inherited-members:
+
 
 Lower-Level Classes
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 .. autoclass:: requests.Request
    :inherited-members:
@@ -35,10 +56,11 @@ Lower-Level Classes
 .. autoclass:: Response
    :inherited-members:
 
-Request Sessions
-----------------
 
-.. autoclass:: Session
+Lower-Lower-Level Classes
+-------------------------
+
+.. autoclass:: requests.PreparedRequest
    :inherited-members:
 
 .. autoclass:: requests.adapters.HTTPAdapter
@@ -52,39 +74,20 @@ Authentication
 .. autoclass:: requests.auth.HTTPProxyAuth
 .. autoclass:: requests.auth.HTTPDigestAuth
 
-Exceptions
-~~~~~~~~~~
-
-.. autoexception:: requests.exceptions.RequestException
-.. autoexception:: requests.exceptions.ConnectionError
-.. autoexception:: requests.exceptions.HTTPError
-.. autoexception:: requests.exceptions.URLRequired
-.. autoexception:: requests.exceptions.TooManyRedirects
-.. autoexception:: requests.exceptions.ConnectTimeout
-.. autoexception:: requests.exceptions.ReadTimeout
-.. autoexception:: requests.exceptions.Timeout
 
 
-Status Code Lookup
-~~~~~~~~~~~~~~~~~~
+Encodings
+---------
 
-.. autofunction:: requests.codes
+.. autofunction:: requests.utils.get_encodings_from_content
+.. autofunction:: requests.utils.get_encoding_from_headers
+.. autofunction:: requests.utils.get_unicode_from_response
 
-::
-
-    >>> requests.codes['temporary_redirect']
-    307
-
-    >>> requests.codes.teapot
-    418
-
-    >>> requests.codes['\o/']
-    200
 
 .. _api-cookies:
 
 Cookies
-~~~~~~~
+-------
 
 .. autofunction:: requests.utils.dict_from_cookiejar
 .. autofunction:: requests.utils.cookiejar_from_dict
@@ -97,33 +100,23 @@ Cookies
    :inherited-members:
 
 
-Encodings
-~~~~~~~~~
 
-.. autofunction:: requests.utils.get_encodings_from_content
-.. autofunction:: requests.utils.get_encoding_from_headers
-.. autofunction:: requests.utils.get_unicode_from_response
+Status Code Lookup
+------------------
 
+.. autoclass:: requests.codes
 
-Classes
-~~~~~~~
+::
 
-.. autoclass:: requests.Response
-   :inherited-members:
+    >>> requests.codes['temporary_redirect']
+    307
 
-.. autoclass:: requests.Request
-   :inherited-members:
+    >>> requests.codes.teapot
+    418
 
-.. autoclass:: requests.PreparedRequest
-   :inherited-members:
+    >>> requests.codes['\o/']
+    200
 
-.. _sessionapi:
-
-.. autoclass:: requests.Session
-   :inherited-members:
-
-.. autoclass:: requests.adapters.HTTPAdapter
-   :inherited-members:
 
 
 Migrating to 1.x
@@ -184,11 +177,14 @@ API Changes
       import requests
       import logging
 
-      # these two lines enable debugging at httplib level (requests->urllib3->httplib)
+      # Enabling debugging at http.client level (requests->urllib3->http.client)
       # you will see the REQUEST, including HEADERS and DATA, and RESPONSE with HEADERS but without DATA.
       # the only thing missing will be the response.body which is not logged.
-      import httplib
-      httplib.HTTPConnection.debuglevel = 1
+      try: # for Python 3
+          from http.client import HTTPConnection
+      except ImportError:
+          from httplib import HTTPConnection
+      HTTPConnection.debuglevel = 1
 
       logging.basicConfig() # you need to initialize logging, otherwise you will not see anything from requests
       logging.getLogger().setLevel(logging.DEBUG)
@@ -262,6 +258,10 @@ Behavioural Changes
 
 * Keys in the ``headers`` dictionary are now native strings on all Python
   versions, i.e. bytestrings on Python 2 and unicode on Python 3. If the
-  keys are not native strings (unicode on Python2 or bytestrings on Python 3)
+  keys are not native strings (unicode on Python 2 or bytestrings on Python 3)
   they will be converted to the native string type assuming UTF-8 encoding.
 
+* Values in the ``headers`` dictionary should always be strings. This has
+  been the project's position since before 1.0 but a recent change
+  (since version 2.11.0) enforces this more strictly. It's advised to avoid
+  passing header values as unicode when possible.
